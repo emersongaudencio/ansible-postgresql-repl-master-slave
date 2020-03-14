@@ -57,7 +57,7 @@ else
 fi
 
 ### postgres parms ###
-MASTER_SERVER=$(cat /tmp/MASTER_SERVER)
+MASTER_SERVER=$(cat /tmp/PRIMARY_SERVER)
 LOCAL_SERVER_IP=" "
 
 ### check the ips address of the machines used on the cluster env ###
