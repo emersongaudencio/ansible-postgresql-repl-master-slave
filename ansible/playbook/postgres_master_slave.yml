@@ -1,0 +1,31 @@
+---
+- name: PostgreSQL Replicas Installation
+  hosts: all
+  tasks:
+     - name: Transfering PostgreSQL install script
+       copy: src=postgres_master_slave/postgresql_install.sh dest=/tmp mode=0777
+
+     - name: Transfering PostgreSQL Configuration script
+       copy: src=postgres_master_slave/postgresql_install_config.sh dest=/tmp mode=0777
+
+     - name: Executing PostgreSQL Installation script
+       command: "sh /tmp/postgresql_install.sh {{ postgresql_version }} {{ serverid }} {{ primary_server }}"
+       register: cmd_install
+     - debug: msg="{{ cmd_install.stdout_lines|replace('\\t',' ') }}"
+     - debug: msg="{{ cmd_install.stderr_lines|replace('\\t',' ') }}"
+
+     - name: Executing PostgreSQL Configuration script
+       command: sh /tmp/postgresql_install_config.sh
+       register: cmd_config
+     - debug: msg="{{ cmd_config.stdout_lines|replace('\\t',' ') }}"
+     - debug: msg="{{ cmd_config.stderr_lines|replace('\\t',' ') }}"
+
+     - name: Ansible delete - PostgreSQL install script
+       file:
+         path: /tmp/postgresql_install.sh
+         state: absent
+
+     - name: Ansible delete - PostgreSQL config script
+       file:
+         path: /tmp/postgresql_install_config.sh
+         state: absent
