@@ -19,11 +19,11 @@ PG_VERSION=$(cat /tmp/PG_VERSION)
 if [ "$PG_VERSION" -gt 9 -a "$PG_VERSION" -lt 13 ]; then
   DB_VERSION=`psql --version |awk {'print $3'}| awk -F "." {'print $1'}`
   pgsql_version=`psql --version |awk {'print $3'}| awk -F "." {'print $1'}`
-  PARAM_PG_BKP="-P -v -w --xlog-method=stream"
+  PARAM_PG_BKP="-P -v -w --wal-method=stream"
 elif [ "$PG_VERSION" -gt 93 -a "$PG_VERSION" -lt 97 ]; then
   DB_VERSION=`psql --version | egrep -o '[0-9]{1,}\.[0-9]{1,}'`
   pgsql_version=`psql --version |awk {'print $3'}| awk -F "." {'print $1$2'}`
-  PARAM_PG_BKP="-P -v -w --wal-method=stream"
+  PARAM_PG_BKP="-P -v -w --xlog-method=stream"
 fi
 
 if [ "$pgsql_version" == "94" ]; then
