@@ -1,6 +1,7 @@
 # This is the default ansible 'hosts' file.
 #
 
+
 ## [dbservers]
 ##
 ## db01.intranet.mydomain.net
@@ -8,7 +9,14 @@
 ## 10.25.1.56
 ## 10.25.1.57
 
-[galeracluster]
-dbtest01 ansible_ssh_host=172.16.122.128
-dbtest02 ansible_ssh_host=172.16.122.136
-dbtest03 ansible_ssh_host=172.16.122.137
+[pgcluster]
+db95master ansible_ssh_host=172.16.122.152
+db95slave ansible_ssh_host=172.16.122.151
+db96master ansible_ssh_host=172.16.122.150
+db96slave ansible_ssh_host=172.16.122.149
+db10master ansible_ssh_host=172.16.122.131
+db10slave ansible_ssh_host=172.16.122.132
+db11master ansible_ssh_host=172.16.122.128
+db11slave ansible_ssh_host=172.16.122.153
+db12master ansible_ssh_host=172.16.122.141
+db12slave ansible_ssh_host=172.16.122.142
