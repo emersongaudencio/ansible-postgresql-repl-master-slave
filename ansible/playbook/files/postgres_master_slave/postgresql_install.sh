@@ -23,7 +23,7 @@ yum clean metadata
 ####### PACKAGES ###########################
 # -------------- For RHEL/CentOS 7 --------------
 yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-yum -y install epel-release
+# yum -y install epel-release
 
 ### remove old packages ####
 yum -y remove postgres
