@@ -81,17 +81,14 @@ sh run_postgres_master_slave_install.sh db11master 11 100 172.16.122.128
 sh run_postgres_master_slave_install.sh db11slave 11 100 172.16.122.128
 ```
 
-Parameters explanation:
-```
-the script run_postgres_master_slave_install.sh has 4 parameters and I'm gonna explain the reason why for each one of them, see below :
-1st parameter: hostname or group-name listed on hosts files
-
-2nd parameter: postgresql version
-
-3rd parameter: id number for the mariadb galera cluster, please set a number between 1 to 1024
-
-4th parameter: ip address of the primary server who will be the one that bootstrap the cluster.
-```
+### Parameters specification:
+#### run_postgres_master_slave_install.sh
+Parameter    | Value           | Mandatory   | Order        | Accepted values
+------------ | ------------- | ------------- | ------------- | -------------
+hostname or group-name listed on hosts files | db11master | Yes | 1 | hosts who are placed inside of the hosts file
+db postgresql version | 11 | Yes | 2 | 94,95,96,10,11,12
+db postgresql server id | 100 | Yes | 3 | integer unique number between 1 to 1024 to identify primary server
+db postgresql primary server address | 172.16.122.128 | Yes | 4 | primary server ip address or dns name respective
 
 PS: Just remember that you can do a single installation at the time or a group installation you inform the name of the group in the hosts' files instead of the host itself.
 
