@@ -1,5 +1,6 @@
 ---
 - name: PostgreSQL Replicas Installation
+  gather_facts: false
   hosts: all
   tasks:
      - name: Transfering PostgreSQL install script
