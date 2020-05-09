@@ -5,11 +5,26 @@ SERVERID=$(cat /tmp/SERVERID)
 ### get total memory ram to configure maintenance_work_mem variable
 MEM_TOTAL=$(expr $(($(cat /proc/meminfo | grep MemTotal | awk '{print $2}') / 10)) \* 10 / 1024 / 1024)
 
-### get amount of memory who will be reserved to effective_cache_size variable
+### get amount of memory who will be reserved to InnoDB Buffer Pool
 MEM_EFCS=$(expr $(($(cat /proc/meminfo | grep MemTotal | awk '{print $2}') / 10)) \* 7 / 1024)
 
-### get amount of memory who will be reserved to shared_buffers variable
-MEM_SHBM=$(expr $(($(cat /proc/meminfo | grep MemTotal | awk '{print $2}') / 10)) \* 2 / 1024)
+lg=$(expr $(echo $MEM_EFCS | wc -m) - 3)
+var_suffix="${MEM_EFCS:$lg:2}"
+
+if [ "$var_suffix" -gt 1 -a "$var_suffix" -lt 99 ]; then
+  var_suffix="00"
+fi
+
+var_preffix="${MEM_EFCS:0:$lg}"
+MEM_EFCS=${var_preffix}${var_suffix}
+MEM_SHBM=$(expr $MEM_EFCS / 2)
+MEM_MWM=$(expr $MEM_EFCS / 4)
+MEM_EFCS="$MEM_EFCS"MB
+MEM_SHBM="$MEM_SHBM"MB
+MEM_MWM="$MEM_MWM"MB
+echo "EFFECTIVE_CACHE_SIZE BF Pool: "$MEM_EFCS
+echo "SHARED_BUFFERS BF Pool: "$MEM_SHBM
+echo "MAINTENANCE_WORK_MEM BF Pool: "$MEM_MWM
 
 ### get the number of cpu's to estimate how many innodb instances will be enough for it. ###
 NR_CPUS=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | wc -l)
@@ -30,32 +45,8 @@ if [ "$pgsql_version" == "94" ]; then
   PG_BLOCK="checkpoint_segments = 64"
 else
   PG_BLOCK="min_wal_size = 2GB
-max_wal_size = 4GB"
-fi
-
-if [ $MEM_TOTAL -lt 8 ]
-  then
-   MEM_MWM="512MB"
-  elif [ $MEM_TOTAL -gt 8 ] && [ $MEM_TOTAL -lt 24 ]
-  then
-    MEM_MWM="1024MB"
-  elif [ $MEM_TOTAL -gt 25 ]
-  then
-    MEM_MWM="2048MB"
-fi
-
-if [ $MEM_EFCS -gt 128 ]
-  then
-   MEM_EFCS="${MEM_EFCS}MB"
-else
-   MEM_EFCS="128MB"
-fi
-
-if [ $MEM_SHBM -gt 128 ]
-  then
-   MEM_SHBM="${MEM_SHBM}MB"
-else
-   MEM_SHBM="128MB"
+max_wal_size = 4GB
+max_worker_processes = 4"
 fi
 
 ### postgres parms ###
@@ -192,7 +183,7 @@ host    replication     all             ::1/128                 ident
 # pg_hba.conf
 host    all             all                0.0.0.0/0             md5
 host    replication     replication_user   0.0.0.0/0             md5
-" >> /var/lib/pgsql/$DB_VERSION/data/pg_hba.conf
+" > /var/lib/pgsql/$DB_VERSION/data/pg_hba.conf
 
 # privs new files
 chown -Rf postgres.postgres ${DATA_DIR}
