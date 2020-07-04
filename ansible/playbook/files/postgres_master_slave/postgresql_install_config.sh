@@ -1,6 +1,7 @@
 #!/bin/bash
 # SERVERID is the ID related to the Master PG Server to help setup replication streaming on the replica servers.
 SERVERID=$(cat /tmp/SERVERID)
+CLIENT_PREFFIX="PG"
 
 ### get total memory ram to configure maintenance_work_mem variable
 MEM_TOTAL=$(expr $(($(cat /proc/meminfo | grep MemTotal | awk '{print $2}') / 10)) \* 10 / 1024 / 1024)
@@ -150,15 +151,28 @@ wal_keep_segments = 10
 
 ### enable log file ###
 log_directory = '$DATA_LOG'
-log_filename = 'postgresql-%Y%m%d_%H%M%S.log'
-log_rotation_age = 7d
-log_rotation_size = 10MB
-log_truncate_on_rotation = off
-log_line_prefix = '%t c%  '
 
+# Logging configuration for pgbadger
+logging_collector = on
+log_statement = 'ddl'
+log_checkpoints = on
 log_connections = on
 log_disconnections = on
-log_statement = 'ddl'
+log_lock_waits = on
+log_temp_files = 0
+lc_messages = 'C'
+log_filename = 'postgresql-%Y%m%d_%H%M%S.log'
+log_truncate_on_rotation        = on
+log_rotation_age                = 1d
+log_rotation_size               = 64MB
+
+# Adjust the minimum time to collect data
+log_min_duration_statement = '10s'
+log_autovacuum_min_duration = 0
+
+# 'stderr' format configuration
+log_destination = 'stderr'
+log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
 " > /var/lib/pgsql/$DB_VERSION/data/server.conf
 
 echo "
@@ -202,7 +216,7 @@ if [ $ec -ne 0 ]; then
      exit 1
 else
 ### generate postgres passwd #####
-passwd="$SERVERID-PG"
+passwd="$CLIENT_PREFFIX-$SERVERID-PG"
 touch /tmp/$passwd
 echo $passwd > /tmp/$passwd
 hash=`md5sum  /tmp/$passwd | awk '{print $1}' | sed -e 's/^[[:space:]]*//' | tr -d '/"/'`
@@ -214,7 +228,7 @@ sudo -u postgres psql -c "ALTER USER postgres WITH password '$hash'"
 REPLICATION_USER_NAME="replication_user"
 
 ### generate replication passwd #####
-RD_REPLICATION_USER_PWD="replication-$SERVERID"
+RD_REPLICATION_USER_PWD="$CLIENT_PREFFIX-replication-$SERVERID"
 touch /tmp/$RD_REPLICATION_USER_PWD
 echo $RD_REPLICATION_USER_PWD > /tmp/$RD_REPLICATION_USER_PWD
 HASH_REPLICATION_USER_PWD=`md5sum  /tmp/$RD_REPLICATION_USER_PWD | awk '{print $1}' | sed -e 's/^[[:space:]]*//' | tr -d '/"/'`
@@ -241,7 +255,7 @@ else
 REPLICATION_USER_NAME="replication_user"
 
 ### generate replication passwd #####
-RD_REPLICATION_USER_PWD="replication-$SERVERID"
+RD_REPLICATION_USER_PWD="$CLIENT_PREFFIX-replication-$SERVERID"
 touch /tmp/$RD_REPLICATION_USER_PWD
 echo $RD_REPLICATION_USER_PWD > /tmp/$RD_REPLICATION_USER_PWD
 HASH_REPLICATION_USER_PWD=`md5sum  /tmp/$RD_REPLICATION_USER_PWD | awk '{print $1}' | sed -e 's/^[[:space:]]*//' | tr -d '/"/'`
@@ -271,10 +285,17 @@ chmod 0600 *.conf
 chmod 0600 PG_VERSION
 chmod 0600 backup_label
 
+# create replica slot on the primary server
+NODE_NAME=$(hostname -s)
+SLOT_NAME="$NODE_NAME-slot"
+PGSQL_BIN=$(which psql)
+PGPASSWORD="$REPLICATION_USER_PWD" $PGSQL_BIN -h $MASTER_SERVER -U $REPLICATION_USER_NAME -c "select pg_create_physical_replication_slot('$SLOT_NAME', true);"
+
 echo "
 standby_mode = 'on'
-primary_conninfo = 'user=$REPLICATION_USER_NAME password=$REPLICATION_USER_PWD host=$MASTER_SERVER port=5432 sslmode=prefer'
+primary_conninfo = 'application_name=$NODE_NAME user=$REPLICATION_USER_NAME password=$REPLICATION_USER_PWD host=$MASTER_SERVER port=5432 sslmode=prefer'
 recovery_target_timeline = 'latest'
+primary_slot_name = '$SLOT_NAME'
 " > /var/lib/pgsql/$DB_VERSION/data/recovery.conf
 chown -Rf postgres.postgres /var/lib/pgsql/$DB_VERSION/data/recovery.conf
 chmod 0600 /var/lib/pgsql/$DB_VERSION/data/recovery.conf
