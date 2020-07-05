@@ -118,8 +118,7 @@ echo "
 ### include server.conf on postgresql.conf
 include 'server.conf' " >> /var/lib/pgsql/$DB_VERSION/data/postgresql.conf
 
-echo "
-# DB Version: $DB_VERSION
+echo "# DB Version: $DB_VERSION
 # Server id = $SERVERID
 # OS Type: linux
 # DB Type: oltp
@@ -261,7 +260,6 @@ echo $RD_REPLICATION_USER_PWD > /tmp/$RD_REPLICATION_USER_PWD
 HASH_REPLICATION_USER_PWD=`md5sum  /tmp/$RD_REPLICATION_USER_PWD | awk '{print $1}' | sed -e 's/^[[:space:]]*//' | tr -d '/"/'`
 REPLICATION_USER_PWD=$HASH_REPLICATION_USER_PWD
 
-
 # restart postgresql
 systemctl stop postgresql-$DB_VERSION
 sleep 5
@@ -291,13 +289,37 @@ SLOT_NAME="$NODE_NAME""slot"
 PGSQL_BIN=$(which psql)
 PGPASSWORD="$REPLICATION_USER_PWD" $PGSQL_BIN -h $MASTER_SERVER -U $REPLICATION_USER_NAME postgres -c "select pg_create_physical_replication_slot('$SLOT_NAME', true);"
 
-echo "standby_mode = 'on'
-primary_conninfo = 'application_name=$NODE_NAME user=$REPLICATION_USER_NAME password=$REPLICATION_USER_PWD host=$MASTER_SERVER port=5432 sslmode=prefer'
-recovery_target_timeline = 'latest'
-primary_slot_name = '$SLOT_NAME'" > /var/lib/pgsql/$DB_VERSION/data/recovery.conf
-chown -Rf postgres.postgres /var/lib/pgsql/$DB_VERSION/data/recovery.conf
-chmod 0600 /var/lib/pgsql/$DB_VERSION/data/recovery.conf
-sleep 5
+if [ "$PG_VERSION" -gt 9 -a "$PG_VERSION" -lt 12 ]; then
+  echo "standby_mode = 'on'
+  primary_conninfo = 'application_name=$NODE_NAME user=$REPLICATION_USER_NAME password=$REPLICATION_USER_PWD host=$MASTER_SERVER port=5432 sslmode=prefer'
+  recovery_target_timeline = 'latest'
+  primary_slot_name = '$SLOT_NAME'" > /var/lib/pgsql/$DB_VERSION/data/recovery.conf
+  chown -Rf postgres.postgres /var/lib/pgsql/$DB_VERSION/data/recovery.conf
+  chmod 0600 /var/lib/pgsql/$DB_VERSION/data/recovery.conf
+  sleep 5
+elif [ "$PG_VERSION" -gt 93 -a "$PG_VERSION" -lt 97 ]; then
+  echo "standby_mode = 'on'
+  primary_conninfo = 'application_name=$NODE_NAME user=$REPLICATION_USER_NAME password=$REPLICATION_USER_PWD host=$MASTER_SERVER port=5432 sslmode=prefer'
+  recovery_target_timeline = 'latest'
+  primary_slot_name = '$SLOT_NAME'" > /var/lib/pgsql/$DB_VERSION/data/recovery.conf
+  chown -Rf postgres.postgres /var/lib/pgsql/$DB_VERSION/data/recovery.conf
+  chmod 0600 /var/lib/pgsql/$DB_VERSION/data/recovery.conf
+  sleep 5
+elif [ "$PG_VERSION" -gt 11 -a "$PG_VERSION" -lt 14 ]; then
+  echo " " > /var/lib/pgsql/$DB_VERSION/data/recovery.signal
+  chown -Rf postgres.postgres /var/lib/pgsql/$DB_VERSION/data/recovery.signal
+  chmod 0600 /var/lib/pgsql/$DB_VERSION/data/recovery.signal
+
+  echo " " > /var/lib/pgsql/$DB_VERSION/data/standby.signal
+  chown -Rf postgres.postgres /var/lib/pgsql/$DB_VERSION/data/standby.signal
+  chmod 0600 /var/lib/pgsql/$DB_VERSION/data/standby.signal
+
+  echo "# replication config
+  primary_conninfo = 'application_name=$NODE_NAME user=$REPLICATION_USER_NAME password=$REPLICATION_USER_PWD host=$MASTER_SERVER port=5432 sslmode=prefer'
+  recovery_target_timeline = 'latest'
+  primary_slot_name = '$SLOT_NAME'" >> /var/lib/pgsql/$DB_VERSION/data/server.conf
+  sleep 5
+fi
 
 systemctl start postgresql-$DB_VERSION
 sleep 5

@@ -43,7 +43,7 @@ yum clean metadata
 
 ### installation of Posgresql via yum ####
 yum -y install postgresql$PG_VERSION postgresql$PG_VERSION-server
-yum -y install perl-DBD-Pg postgresql$PG_VERSION-python
+yum -y install perl-DBD-Pg postgresql$PG_VERSION-python postgresql$PG_VERSION-contrib
 
 ### Percona #####
 ### https://www.percona.com/doc/percona-server/LATEST/installation/yum_repo.html
