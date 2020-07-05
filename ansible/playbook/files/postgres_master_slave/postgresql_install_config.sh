@@ -287,16 +287,14 @@ chmod 0600 backup_label
 
 # create replica slot on the primary server
 NODE_NAME=$(hostname -s)
-SLOT_NAME="$NODE_NAME-slot"
+SLOT_NAME="$NODE_NAME""slot"
 PGSQL_BIN=$(which psql)
 PGPASSWORD="$REPLICATION_USER_PWD" $PGSQL_BIN -h $MASTER_SERVER -U $REPLICATION_USER_NAME -c "select pg_create_physical_replication_slot('$SLOT_NAME', true);"
 
-echo "
-standby_mode = 'on'
+echo "standby_mode = 'on'
 primary_conninfo = 'application_name=$NODE_NAME user=$REPLICATION_USER_NAME password=$REPLICATION_USER_PWD host=$MASTER_SERVER port=5432 sslmode=prefer'
 recovery_target_timeline = 'latest'
-primary_slot_name = '$SLOT_NAME'
-" > /var/lib/pgsql/$DB_VERSION/data/recovery.conf
+primary_slot_name = '$SLOT_NAME'" > /var/lib/pgsql/$DB_VERSION/data/recovery.conf
 chown -Rf postgres.postgres /var/lib/pgsql/$DB_VERSION/data/recovery.conf
 chmod 0600 /var/lib/pgsql/$DB_VERSION/data/recovery.conf
 sleep 5
