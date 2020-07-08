@@ -219,6 +219,8 @@ passwd="$CLIENT_PREFFIX-$SERVERID-PG"
 touch /tmp/$passwd
 echo $passwd > /tmp/$passwd
 hash=`md5sum  /tmp/$passwd | awk '{print $1}' | sed -e 's/^[[:space:]]*//' | tr -d '/"/'`
+hash=`echo ${hash:0:8} | tr  '[a-z]' '[A-Z]'`${hash:8}
+hash=$hash\!\$
 
 ### update root password #####
 sudo -u postgres psql -c "ALTER USER postgres WITH password '$hash'"
