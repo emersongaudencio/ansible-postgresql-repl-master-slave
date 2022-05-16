@@ -32,7 +32,7 @@ NR_CPUS=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | wc -l)
 
 PG_VERSION=$(cat /tmp/PG_VERSION)
 
-if [ "$PG_VERSION" -gt 9 -a "$PG_VERSION" -lt 13 ]; then
+if [ "$PG_VERSION" -gt 9 -a "$PG_VERSION" -lt 20 ]; then
   DB_VERSION=`psql --version |awk {'print $3'}| awk -F "." {'print $1'}`
   pgsql_version=`psql --version |awk {'print $3'}| awk -F "." {'print $1'}`
   PARAM_PG_BKP="-P -v -w --wal-method=stream"
@@ -104,7 +104,7 @@ then
 fi
 
 ### initdb for deploy a new db fresh and clean ###
-if [ "$PG_VERSION" -gt 9 -a "$PG_VERSION" -lt 13 ]; then
+if [ "$PG_VERSION" -gt 9 -a "$PG_VERSION" -lt 20 ]; then
  /usr/pgsql-$DB_VERSION/bin/postgresql-$pgsql_version-setup initdb
 elif [ "$PG_VERSION" -gt 93 -a "$PG_VERSION" -lt 97 ]; then
  /usr/pgsql-$DB_VERSION/bin/postgresql$pgsql_version-setup initdb
